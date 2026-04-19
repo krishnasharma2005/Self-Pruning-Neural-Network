@@ -61,16 +61,14 @@ Final experiments were conducted on Google Colab using GPU acceleration.
 Development and debugging were performed locally using VS Code. Final experiments were executed on Google Colab with GPU acceleration to enable training on the full CIFAR-10 dataset.
 
 ## Results
-dataset | Lambda | Test Accuracy (%) | Sparsity (%)
-test data | --- | --- | ---
-0.01 | 41.04 | 49.60%
-same as above | ... |
-default lambda values and results...
 | **Lambda** | **Test Accuracy (%)** | **Sparsity (%)** |
 |---|---|---|
 | **0.01** | **41.04** | **49.60** |
 | **0.05** | **41.52** | **76.86** |
 | **0.1** | **39.84** | **80.19** |
+
+<img width="597" height="455" alt="image" src="https://github.com/user-attachments/assets/56158ff4-e1a9-4a01-a8f7-859e8793ec48" />
+
 
 ## Observations
 1. Sparsity vs Lambda:
