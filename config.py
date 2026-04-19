@@ -1,0 +1,7 @@
+BATCH_SIZE = 64
+EPOCHS = 10   # increase later
+LR = 0.001
+
+LAMBDA_VALUES = [0.01, 0.05, 0.1]
+
+THRESHOLD = 0.05
