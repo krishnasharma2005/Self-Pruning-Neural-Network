@@ -114,12 +114,13 @@ This results in a **sparse and efficient model**.
 * Maintained competitive accuracy
 * Improved efficiency for deployment
 
-<img width="801" height="600" alt="Screenshot 2026-04-19 180547" src="https://github.com/user-attachments/assets/e0db862d-a9f8-4e88-8691-5f5e6468c4ec" />
+<img width="597" height="455" alt="image" src="https://github.com/user-attachments/assets/444a55b9-61d7-416c-b3f2-2f95e543bb63" />
+
 
 
 ---
 
-## 🔮 Future Work
+##  Future Work
 
 * Structured pruning (filters / channels)
 * Integration with quantization
