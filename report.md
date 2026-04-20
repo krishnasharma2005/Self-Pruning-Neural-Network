@@ -1,96 +1,165 @@
-# Self-Pruning Neural Network using Learnable Gates
+#  Self-Pruning Neural Network using Learnable Gates
 
-## Problem Overview
+---
 
-Modern neural networks are often overparameterized, making them inefficient for deployment in real-world systems with memory and computational constraints. A common solution is model pruning, where less important weights are removed after training.
+##  Problem Overview
 
-In this project, we implement a self-pruning neural network that learns to prune its own connections during training. Instead of relying on post-processing, the model dynamically identifies and suppresses unimportant weights using learnable gating mechanisms.
+Modern neural networks are often overparameterized, making them inefficient for deployment in real-world systems with memory and computational constraints. Model pruning is commonly used to reduce model size by removing less important weights.
 
-## Approach
+In this project, we implement a **self-pruning neural network** that learns to remove its own unnecessary connections during training. Instead of post-training pruning, the model dynamically suppresses unimportant weights using learnable gating mechanisms.
 
-### 1. Prunable Linear Layer
+---
 
-We designed a custom layer `PrunableLinear`, where each weight is associated with a learnable gate score.
+##  Approach
 
-Gate values are computed using:
-```plaintext
-gate=σ(gate_score)
-```
+### 1. Learnable Gating Mechanism
+
+Each weight in the network is associated with a learnable **gate score**.
+
+The gate value is computed using a sigmoid function:
+
+gate = sigmoid(gate_score)
+
+where:
+
+$$
+\sigma(x) = \frac{1}{1 + e^{-x}}
+$$
+
 The effective weight becomes:
-```plaintext
-w~ = w ⋅ gate
-```
-This allows the network to scale or suppress individual weights during training.
 
-### 2. Hard Pruning Mechanism
+$$
+\tilde{w}_{ij} = w_{ij} \cdot \text{gate}_{ij}
+$$
 
-Since sigmoid outputs are continuous and rarely reach exact zero, we introduced a threshold-based pruning mechanism:
-```plaintext
-hard_gate = (gate > 0.6)
-```
-Weights corresponding to gates below this threshold are effectively removed during the forward pass.
+
+This allows the model to scale or suppress individual weights during training.
+
+---
+
+### 2. Hard Pruning
+
+Since sigmoid outputs are continuous and do not reach exact zero, we apply threshold-based pruning:
+
+**hard_gate = 1 if gate > 0.6 else 0**
+
+Weights below this threshold are effectively removed during the forward pass.
+
+---
 
 ### 3. Straight-Through Estimator (STE)
 
-Hard thresholding is non-differentiable. To allow gradient flow, we used a Straight-Through Estimator (STE):
-```plaintext
-gate = hard_gate.detach() - gate.detach() + gate
-```
-This enables:
-- Discrete pruning in forward pass
-- Continuous gradients during backpropagation
+Hard thresholding is non-differentiable. To enable gradient flow, we use a Straight-Through Estimator (STE):
 
-### 4. Sparsity Regularization
-To encourage pruning, we added an L1 penalty on gate values:
-```
-total_loss = CE + λ ⋅ ∑gate
-```
-Larger λ increases pruning pressure; smaller λ preserves more weights.
+**gate = hard_gate.detach() - gate.detach() + gate**
 
-## Experimental Setup
-dataset: CIFAR-10  
-mModel Architecture: Input (3072) → 512 → 256 → 10  
-Optimizer: Adam  
-Loss Function: Cross-Entropy + Sparsity Loss  
-epochs: 10  
-default threshold: 0.6.
-Final experiments were conducted on Google Colab using GPU acceleration.
+This allows:
+- Discrete pruning during forward pass  
+- Gradient flow during backpropagation  
 
-## Execution Details
+---
 
-Development and debugging were performed locally using VS Code. Final experiments were executed on Google Colab with GPU acceleration to enable training on the full CIFAR-10 dataset.
+### 4. Loss Function
 
-## Results
-| **Lambda** | **Test Accuracy (%)** | **Sparsity (%)** |
-|---|---|---|
-| **0.01** | **41.04** | **49.60** |
-| **0.05** | **41.52** | **76.86** |
-| **0.1** | **39.84** | **80.19** |
+The model is trained using a combination of classification loss and sparsity regularization.
 
-<img width="597" height="455" alt="image" src="https://github.com/user-attachments/assets/56158ff4-e1a9-4a01-a8f7-859e8793ec48" />
+**Total Loss = CrossEntropy Loss + λ × Sparsity Loss**
+
+Where:
+
+Sparsity Loss = sum of all gate values
+
+The hyperparameter λ controls the strength of pruning.
+
+---
+
+##  Experimental Setup
+
+- Dataset: CIFAR-10  
+- Model Architecture:
+  - Input (3072) → 512 → 256 → 10  
+- Optimizer: Adam  
+- Number of Epochs: 10  
+- Pruning Threshold: 0.6  
+
+---
+
+##  Results
+
+| Lambda | Test Accuracy (%) | Sparsity (%) |
+|--------|------------------|--------------|
+| 0.01   | 41.04            | 49.60        |
+| 0.05   | 41.52            | 76.86        |
+| 0.1    | 39.84            | 80.19        |
+
+---
+
+##  Observations
+
+### 1. Effect of Sparsity Coefficient
+
+Increasing λ leads to higher sparsity:
+
+- λ = 0.01 → ~50% sparsity  
+- λ = 0.05 → ~77% sparsity  
+- λ = 0.1 → ~80% sparsity  
+
+This confirms that the sparsity regularization term effectively controls pruning.
+
+---
+
+### 2. Accuracy vs Sparsity Trade-off
+
+- Accuracy remains relatively stable (~40–41%) even at high sparsity  
+- A slight drop is observed at higher λ due to aggressive pruning  
+
+This indicates that a large portion of the model parameters are redundant.
+
+---
+
+### 3. Sparsity Calculation
+
+**Sparsity (%) = (Number of pruned weights / Total number of weights) × 100**
+
+---
+
+### 4. Gate Value Distribution
+
+<img width="640" height="480" alt="gate_distribution" src="https://github.com/user-attachments/assets/909184a3-e9ea-469e-952a-1fbc6c4f7b08" />
 
 
-## Observations
-1. Sparsity vs Lambda:
-increasing λ leads to higher sparsity (~50% → ~77% → ~80%), confirming that the regularization term effectively controls pruning.
-2. Accuracy vs Sparsity Trade-off:
-a accuracy remains relatively stable (~40–41%) even at high sparsity; slight drop at highest λ due to aggressive pruning.
-3. Gate Value Distribution:
-the distribution shows a dense cluster below (~0.3–0.5), representing pruned connections, and a smaller cluster (~0.7), representing important retained weights.
-the separation demonstrates successful learning of useful vs redundant connections.
+The gate value distribution shows:
 
-## Key Insights
-defines that neural networks are inherently overparameterized,
-enables adaptive pruning during training via learnable gating,
-states STE as essential for gradient flow through discrete decisions,
-and emphasizes proper threshold calibration (0.6) for effective sparsity,
-even with ~80% pruning, performance degradation is minimal.
+- A large concentration of low-value gates → pruned weights  
+- A smaller cluster of higher values → important retained weights  
 
-## Conclusion
-the implementation of a self-pruning neural network successfully removes unnecessary weights dynamically during training while maintaining competitive accuracy—highlighting the potential for building efficient neural networks without post-training pruning steps.
+Although the values are not strictly binary, thresholding enables effective separation between active and inactive connections.
 
-## Future Work
-extend pruning to convolutional layers,
-explore structured pruning (filters/channels),
-pursue L0 regularization for exact sparsity,
-and benchmark inference speed improvements.
+---
+
+##  Key Insights
+
+- Neural networks are inherently **overparameterized**  
+- Learnable gating enables **dynamic pruning during training**  
+- The Straight-Through Estimator (STE) is essential for enabling gradient flow through discrete pruning operations  
+- Proper threshold selection is critical for achieving meaningful sparsity  
+- High sparsity (~80%) can be achieved with minimal accuracy loss  
+
+---
+
+##  Conclusion
+
+We successfully implemented a self-pruning neural network that dynamically removes unnecessary weights during training. The model achieves high sparsity levels while maintaining competitive accuracy, demonstrating the effectiveness of combining learnable gating, sparsity regularization, and gradient approximation techniques.
+
+This approach highlights the potential for building efficient neural networks without requiring post-training pruning.
+
+---
+
+##  Future Work
+
+- Extend pruning to convolutional layers  
+- Explore structured pruning (filters or channels)  
+- Apply L0 regularization for exact sparsity  
+- Benchmark inference speed improvements  
+
+---
